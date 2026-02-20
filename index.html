@@ -3,92 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Lemonade Tycoon</title>
+    <title>Lemonade Tycoon Pro</title>
     <script src="https://telegram.org"></script>
     <style>
-        body { font-family: sans-serif; background: #fffdf2; text-align: center; padding: 20px; user-select: none; }
-        .card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        :root { --accent: #f1c40f; --success: #2ecc71; --card: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background: #fffdf2; text-align: center; padding: 15px; margin: 0; user-select: none; }
+        .card { background: var(--card); border-radius: 20px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 15px; }
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .val { font-weight: bold; color: #f1c40f; display: block; font-size: 1.2em; }
-        button { 
-            width: 100%; padding: 20px; margin: 10px 0; border: none; border-radius: 15px; 
-            font-size: 18px; font-weight: bold; cursor: pointer; background: #ffe066;
-            touch-action: manipulation; /* Убирает задержку клика на смартфонах */
-        }
-        .btn-make { background: #2ecc71; color: white; margin-top: 20px; }
-        button:active { background: #ddd; transform: scale(0.98); }
+        .val { font-weight: bold; color: var(--accent); font-size: 1.2em; display: block; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; border-radius: 10px; border: none; background: #eee; font-weight: bold; }
+        .tab-btn.active { background: var(--accent); color: white; }
+
+        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        .shop-info { font-size: 0.9em; color: #666; }
+        .buy-upg { width: auto; padding: 8px 12px; font-size: 0.8em; margin: 0; background: #f0f0f0; }
+
+        button { width: 100%; padding: 18px; margin: 8px 0; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; touch-action: manipulation; }
+        .btn-main { background: var(--accent); color: #000; }
+        .btn-make { background: var(--success); color: white; }
+        button:active { transform: scale(0.97); opacity: 0.8; }
+        #game-view, #shop-view { display: none; }
+        .active-view { display: block !important; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>🍋 Лимонадная Лавка</h2>
         <div class="stat-grid">
             <div>💰 Деньги<span id="money" class="val">50</span></div>
             <div>🌟 Уровень<span id="lvl" class="val">1</span></div>
             <div>🍋 Лимоны<span id="lemons" class="val">0</span></div>
-            <div>🍬 Сахар<span id="sugar" class="val">0</span></div>
+            <div>🍬 Сахар (г)<span id="sugar" class="val">0</span></div>
         </div>
     </div>
 
-    <button onclick="buy('lemon')">Купить Лимон (10₽)</button>
-    <button onclick="buy('sugar')">Купить Сахар 100г (5₽)</button>
-    <button class="btn-make" onclick="make()">⚡ СВАРИТЬ ЛИМОНАД</button>
+    <div class="tabs">
+        <button class="tab-btn active" id="t-game" onclick="switchTab('game')">🏠 Кухня</button>
+        <button class="tab-btn" id="t-shop" onclick="switchTab('shop')">🛒 Магазин</button>
+    </div>
+
+    <!-- ВКЛАДКА ИГРЫ -->
+    <div id="game-view" class="active-view">
+        <button class="btn-main" onclick="buyItem('lemon')">🍋 Купить Лимон (<span id="p-lemon">10</span>₽)</button>
+        <button class="btn-main" onclick="buyItem('sugar')">🍬 Купить Сахар 100г (<span id="p-sugar">5</span>₽)</button>
+        <button class="btn-make" onclick="make()">⚡ СВАРИТЬ ЛИМОНАД</button>
+    </div>
+
+    <!-- ВКЛАДКА МАГАЗИНА -->
+    <div id="shop-view">
+        <div class="card">
+            <div class="shop-item">
+                <div><b>❄️ Холодильник</b><div class="shop-info">Шанс порчи -5% за уровень</div></div>
+                <button class="buy-upg" onclick="upgrade('fridge')"><span id="u-fridge">200</span>₽</button>
+            </div>
+            <div class="shop-item">
+                <div><b>🥤 Соковыжималка</b><div class="shop-info">Доход +10₽ с продажи</div></div>
+                <button class="buy-upg" onclick="upgrade('juicer')"><span id="u-juicer">350</span>₽</button>
+            </div>
+            <div class="shop-item">
+                <div><b>🚚 Оптовка</b><div class="shop-info">Скидка -1₽ на ингредиенты</div></div>
+                <button class="buy-upg" onclick="upgrade('truck')"><span id="u-truck">500</span>₽</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Начальные данные (на случай если облако не ответит)
-        let state = { money: 50, lemons: 0, sugar: 0, lvl: 1, total_made: 0, successful: 0 };
+        let state = {
+            money: 50, lemons: 0, sugar: 0, lvl: 1, total_made: 0, successful: 0,
+            upgrades: { fridge: 0, juicer: 0, truck: 0 }
+        };
 
-        // Функция обновления экрана
         function updateUI() {
             document.getElementById('money').innerText = state.money + '₽';
             document.getElementById('lemons').innerText = state.lemons;
             document.getElementById('sugar').innerText = state.sugar;
             document.getElementById('lvl').innerText = state.lvl;
+
+            // Цены с учетом скидки Оптовки
+            document.getElementById('p-lemon').innerText = Math.max(5, 10 - state.upgrades.truck);
+            document.getElementById('p-sugar').innerText = Math.max(2, 5 - state.upgrades.truck);
+
+            // Цены улучшений
+            document.getElementById('u-fridge').innerText = (state.upgrades.fridge + 1) * 200;
+            document.getElementById('u-juicer').innerText = (state.upgrades.juicer + 1) * 350;
+            document.getElementById('u-truck').innerText = (state.upgrades.truck + 1) * 500;
         }
 
-        // Попытка загрузки из Облака
-        try {
-            tg.CloudStorage.getItem('lemon_save', (err, value) => {
-                if (!err && value) {
-                    state = JSON.parse(value);
-                    updateUI();
-                }
-            });
-        } catch(e) { console.log("CloudStorage недоступен"); }
-
-        function save() {
-            updateUI();
-            try {
-                tg.CloudStorage.setItem('lemon_save', JSON.stringify(state));
-            } catch(e) {}
+        function switchTab(tab) {
+            document.getElementById('game-view').classList.toggle('active-view', tab === 'game');
+            document.getElementById('shop-view').classList.toggle('active-view', tab === 'shop');
+            document.getElementById('t-game').classList.toggle('active', tab === 'game');
+            document.getElementById('t-shop').classList.toggle('active', tab === 'shop');
         }
 
-        function buy(type) {
-            if (type === 'lemon' && state.money >= 10) {
-                state.money -= 10; state.lemons += 1;
-            } else if (type === 'sugar' && state.money >= 5) {
-                state.money -= 5; state.sugar += 100;
-            } else {
-                alert("Недостаточно денег!");
-                return;
-            }
-            save();
+        function buyItem(type) {
+            let price = type === 'lemon' ? Math.max(5, 10 - state.upgrades.truck) : Math.max(2, 5 - state.upgrades.truck);
+            if (state.money >= price) {
+                state.money -= price;
+                if (type === 'lemon') state.lemons += 1; else state.sugar += 100;
+                save();
+            } else alert("Мало денег!");
+        }
+
+        function upgrade(type) {
+            let cost = type === 'fridge' ? (state.upgrades.fridge + 1) * 200 : 
+                       type === 'juicer' ? (state.upgrades.juicer + 1) * 350 : (state.upgrades.truck + 1) * 500;
+            if (state.money >= cost) {
+                state.money -= cost;
+                state.upgrades[type] += 1;
+                save();
+            } else alert("Нужно больше золота!");
         }
 
         function make() {
             if (state.lemons >= 1 && state.sugar >= 100) {
-                state.lemons -= 1;
-                state.sugar -= 100;
+                state.lemons -= 1; state.sugar -= 100;
                 state.total_made += 1;
 
-                let price = 30 + (state.lvl * 5);
-                
-                // Шанс порчи 15% со второго раза
-                if (state.total_made > 1 && Math.random() < 0.15) {
+                let chance = 0.15 - (state.upgrades.fridge * 0.05); // Холодильник снижает риск
+                let bonus = state.upgrades.juicer * 10; // Соковыжималка дает бонус
+                let price = 30 + (state.lvl * 5) + bonus;
+
+                if (state.total_made > 1 && Math.random() < Math.max(0.01, chance)) {
                     let earned = Math.floor(price * 0.3);
                     state.money += earned;
                     alert("🤢 Испортился! Выручка: " + earned + "₽");
@@ -98,10 +139,20 @@
                     state.lvl = Math.floor(state.successful / 5) + 1;
                 }
                 save();
-            } else {
-                alert("Нужно: 1 лимон и 100г сахара!");
-            }
+            } else alert("Нет ингредиентов!");
         }
+
+        function save() {
+            updateUI();
+            try { tg.CloudStorage.setItem('lemon_save_pro', JSON.stringify(state)); } catch(e) {}
+        }
+
+        // Загрузка
+        try {
+            tg.CloudStorage.getItem('lemon_save_pro', (err, val) => {
+                if (!err && val) { state = JSON.parse(val); updateUI(); }
+            });
+        } catch(e) {}
 
         updateUI();
     </script>
