@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lemonade Tycoon</title>
+    <script src="https://telegram.org"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--tg-theme-bg-color, #fdf5e6);
+            color: var(--tg-theme-text-color, #333);
+            display: flex;
+            justify-content: center;
+            padding-top: 20px;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            background: var(--tg-theme-secondary-bg-color, #fff);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 { color: #ffcc00; margin-bottom: 5px; }
+        .hint { font-size: 0.8em; opacity: 0.6; margin-bottom: 20px; }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.95); }
+        
+        .btn-lemon { background-color: #ffd700; color: #000; }
+        .btn-sugar { background-color: #f0f0f0; color: #000; }
+        .btn-make { background-color: #4caf50; color: white; margin-top: 20px; }
+        .btn-stats { background-color: var(--tg-theme-button-color, #2481cc); color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍋 Lemonade Shop</h1>
+        <p class="hint">Управляй бизнесом в одно касание</p>
+        
+        <button class="btn btn-lemon" onclick="send('/buy_lemon')">🍋 Купить Лимон (10₽)</button>
+        <button class="btn btn-sugar" onclick="send('/buy_sugar')">🍬 Купить Сахар (5₽)</button>
+        <button class="btn btn-make" onclick="send('/make_lemonade')">⚡ СДЕЛАТЬ ЛИМОНАД</button>
+        <button class="btn btn-stats" onclick="send('/stats')">📊 Статистика</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        function send(command) {
+            tg.sendData(command);
+            tg.close();
+        }
+    </script>
+</body>
+</html>
