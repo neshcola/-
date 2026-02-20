@@ -3,45 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Lemonade Tycoon</title>
+    <title>Lemonade Tycoon 2026</title>
     <script src="https://telegram.org"></script>
     <style>
-        body { font-family: sans-serif; background: #fffdf2; text-align: center; margin: 0; padding: 20px; }
-        .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .stat { font-size: 1.2em; font-weight: bold; color: #555; margin: 5px 0; }
-        .val { color: #f1c40f; font-size: 1.4em; }
-        button { 
-            width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 12px; 
-            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        :root {
+            --bg-color: #fffdf2;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --accent: #f1c40f;
+            --success: #2ecc71;
+            --danger: #e74c3c;
         }
-        .btn-buy { background: #ffe066; color: #000; }
-        .btn-make { background: #2ecc71; color: white; font-size: 1.2em; padding: 20px; }
-        button:active { transform: scale(0.98); opacity: 0.8; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #d4ac0d;
+        }
+
+        /* Карточка статистики */
+        .stats-container {
+            width: 100%;
+            max-width: 350px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+            box-sizing: border-box;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label { font-size: 12px; color: #888; text-transform: uppercase; }
+        .stat-value { font-size: 20px; font-weight: bold; color: var(--text-color); }
+        .highlight { color: var(--accent); }
+
+        /* Анимация лимона */
+        #lemon-container {
+            font-size: 80px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+        .bounce { animation: bounce 0.5s ease; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px) rotate(15deg); }
+        }
+
+        /* Кнопки */
+        .controls { width: 100%; max-width: 350px; }
+        
+        button {
+            width: 100%;
+            padding: 18px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-buy { background: #f9f9f9; border: 2px solid #eee; color: #333; }
+        .btn-buy:active { background: #eee; transform: scale(0.98); }
+
+        .btn-make {
+            background: var(--success);
+            color: white;
+            font-size: 18px;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+        .btn-make:active { transform: scale(0.95); }
+        .btn-make:disabled { background: #ccc; box-shadow: none; opacity: 0.6; }
+
+        .spoiled-msg { color: var(--danger); font-weight: bold; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>🍋 Моя Лавка</h1>
-        <div class="stat">💰 Деньги: <span id="money" class="val">0</span>₽</div>
-        <div class="stat">🍋 Лимоны: <span id="lemons" class="val">0</span> шт.</div>
-        <div class="stat">🍬 Сахар: <span id="sugar" class="val">0</span>г</div>
-        <div class="stat">🌟 Уровень: <span id="lvl" class="val">1</span></div>
+    <div class="header">🍋 Lemonade Tycoon</div>
+
+    <div id="lemon-container">🍋</div>
+
+    <div class="stats-container">
+        <div class="stat-item">
+            <span class="stat-label">Баланс</span>
+            <span id="money" class="stat-value highlight">50</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Уровень</span>
+            <span id="lvl" class="stat-value">1</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Лимоны</span>
+            <span id="lemons" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Сахар (г)</span>
+            <span id="sugar" class="stat-value">0</span>
+        </div>
     </div>
 
-    <button class="btn-buy" onclick="buy('lemon')">Купить Лимон (10₽)</button>
-    <button class="btn-buy" onclick="buy('sugar')">Купить Сахар 100г (5₽)</button>
-    <button class="btn-make" onclick="make()">⚡ СДЕЛАТЬ ЛИМОНАД</button>
+    <div class="controls">
+        <button class="btn-buy" onclick="buy('lemon')">🍋 Купить Лимон (10₽)</button>
+        <button class="btn-buy" onclick="buy('sugar')">🍬 Купить Сахар 100г (5₽)</button>
+        <button class="btn-make" id="makeBtn" onclick="make()">⚡ СВАРИТЬ ЛИМОНАД</button>
+    </div>
+
+    <div id="spoiledHint" class="spoiled-msg">🤢 Лимонад испортился!</div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        tg.ready();
 
-        // Начальные данные
-        let state = { money: 50, lemons: 0, sugar: 0, lvl: 1, total_made: 0 };
+        // Состояние игры
+        let state = {
+            money: 50,
+            lemons: 0,
+            sugar: 0,
+            lvl: 1,
+            total_made: 0,
+            successful: 0
+        };
 
-        // 1. Загрузка данных из облака Telegram
-        tg.CloudStorage.getItem('game_state', (err, value) => {
+        // Загрузка из облака TG
+        tg.CloudStorage.getItem('lemon_tycoon_save_2026', (err, value) => {
             if (!err && value) {
                 state = JSON.parse(value);
                 updateUI();
@@ -49,22 +162,28 @@
         });
 
         function save() {
-            tg.CloudStorage.setItem('game_state', JSON.stringify(state));
+            tg.CloudStorage.setItem('lemon_tycoon_save_2026', JSON.stringify(state));
             updateUI();
         }
 
         function updateUI() {
-            document.getElementById('money').innerText = state.money;
+            document.getElementById('money').innerText = state.money + '₽';
             document.getElementById('lemons').innerText = state.lemons;
             document.getElementById('sugar').innerText = state.sugar;
             document.getElementById('lvl').innerText = state.lvl;
+            
+            // Проверка доступности кнопки варки
+            const makeBtn = document.getElementById('makeBtn');
+            makeBtn.disabled = (state.lemons < 1 || state.sugar < 100);
         }
 
-        function buy(item) {
-            if (item === 'lemon' && state.money >= 10) {
+        function buy(type) {
+            if (type === 'lemon' && state.money >= 10) {
                 state.money -= 10; state.lemons += 1;
-            } else if (item === 'sugar' && state.money >= 5) {
+                tg.HapticFeedback.impactOccurred('light');
+            } else if (type === 'sugar' && state.money >= 5) {
                 state.money -= 5; state.sugar += 100;
+                tg.HapticFeedback.impactOccurred('light');
             } else {
                 tg.showAlert("Недостаточно денег!");
                 return;
@@ -73,27 +192,37 @@
         }
 
         function make() {
-            if (state.lemons >= 1 && state.sugar >= 100) {
-                state.lemons -= 1;
-                state.sugar -= 100;
-                state.total_made += 1;
+            if (state.lemons < 1 || state.sugar < 100) return;
 
-                // Шанс порчи 15% (кроме первого раза)
-                let price = 30 + (state.lvl * 5);
-                if (state.total_made > 1 && Math.random() < 0.15) {
-                    let earned = Math.floor(price * 0.3);
-                    state.money += earned;
-                    tg.showPopup({title: "Ой!", message: `Лимонад испортился... Продан за ${earned}₽`, buttons: [{type: 'ok'}]});
-                } else {
-                    state.money += price;
-                    // Повышение уровня каждые 5 удачных лимонадв
-                    state.lvl = Math.floor(state.total_made / 5) + 1;
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
-                save();
+            // Анимация
+            const lemon = document.getElementById('lemon-container');
+            lemon.classList.remove('bounce');
+            void lemon.offsetWidth; // Магия для перезапуска анимации
+            lemon.classList.add('bounce');
+
+            state.lemons -= 1;
+            state.sugar -= 100;
+            state.total_made += 1;
+
+            const basePrice = 30 + (state.lvl * 5);
+            const spoiledHint = document.getElementById('spoiledHint');
+            spoiledHint.style.display = 'none';
+
+            // Логика порчи: 15%, кроме 1-го раза
+            if (state.total_made > 1 && Math.random() < 0.15) {
+                const earned = Math.floor(basePrice * 0.3);
+                state.money += earned;
+                spoiledHint.style.display = 'block';
+                tg.HapticFeedback.notificationOccurred('error');
             } else {
-                tg.showAlert("Нужны ингредиенты: 1 лимон и 100г сахара!");
+                state.money += basePrice;
+                state.successful += 1;
+                // Уровень растет каждые 5 успешных продаж
+                state.lvl = Math.floor(state.successful / 5) + 1;
+                tg.HapticFeedback.notificationOccurred('success');
             }
+
+            save();
         }
 
         updateUI();
