@@ -2,69 +2,101 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Lemonade Tycoon</title>
     <script src="https://telegram.org"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--tg-theme-bg-color, #fdf5e6);
-            color: var(--tg-theme-text-color, #333);
-            display: flex;
-            justify-content: center;
-            padding-top: 20px;
+        body { font-family: sans-serif; background: #fffdf2; text-align: center; margin: 0; padding: 20px; }
+        .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .stat { font-size: 1.2em; font-weight: bold; color: #555; margin: 5px 0; }
+        .val { color: #f1c40f; font-size: 1.4em; }
+        button { 
+            width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 12px; 
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
         }
-        .container {
-            width: 90%;
-            max-width: 400px;
-            background: var(--tg-theme-secondary-bg-color, #fff);
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        h1 { color: #ffcc00; margin-bottom: 5px; }
-        .hint { font-size: 0.8em; opacity: 0.6; margin-bottom: 20px; }
-        
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .btn:active { transform: scale(0.95); }
-        
-        .btn-lemon { background-color: #ffd700; color: #000; }
-        .btn-sugar { background-color: #f0f0f0; color: #000; }
-        .btn-make { background-color: #4caf50; color: white; margin-top: 20px; }
-        .btn-stats { background-color: var(--tg-theme-button-color, #2481cc); color: white; }
+        .btn-buy { background: #ffe066; color: #000; }
+        .btn-make { background: #2ecc71; color: white; font-size: 1.2em; padding: 20px; }
+        button:active { transform: scale(0.98); opacity: 0.8; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🍋 Lemonade Shop</h1>
-        <p class="hint">Управляй бизнесом в одно касание</p>
-        
-        <button class="btn btn-lemon" onclick="send('/buy_lemon')">🍋 Купить Лимон (10₽)</button>
-        <button class="btn btn-sugar" onclick="send('/buy_sugar')">🍬 Купить Сахар (5₽)</button>
-        <button class="btn btn-make" onclick="send('/make_lemonade')">⚡ СДЕЛАТЬ ЛИМОНАД</button>
-        <button class="btn btn-stats" onclick="send('/stats')">📊 Статистика</button>
+
+    <div class="card">
+        <h1>🍋 Моя Лавка</h1>
+        <div class="stat">💰 Деньги: <span id="money" class="val">0</span>₽</div>
+        <div class="stat">🍋 Лимоны: <span id="lemons" class="val">0</span> шт.</div>
+        <div class="stat">🍬 Сахар: <span id="sugar" class="val">0</span>г</div>
+        <div class="stat">🌟 Уровень: <span id="lvl" class="val">1</span></div>
     </div>
+
+    <button class="btn-buy" onclick="buy('lemon')">Купить Лимон (10₽)</button>
+    <button class="btn-buy" onclick="buy('sugar')">Купить Сахар 100г (5₽)</button>
+    <button class="btn-make" onclick="make()">⚡ СДЕЛАТЬ ЛИМОНАД</button>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        function send(command) {
-            tg.sendData(command);
-            tg.close();
+        // Начальные данные
+        let state = { money: 50, lemons: 0, sugar: 0, lvl: 1, total_made: 0 };
+
+        // 1. Загрузка данных из облака Telegram
+        tg.CloudStorage.getItem('game_state', (err, value) => {
+            if (!err && value) {
+                state = JSON.parse(value);
+                updateUI();
+            }
+        });
+
+        function save() {
+            tg.CloudStorage.setItem('game_state', JSON.stringify(state));
+            updateUI();
         }
+
+        function updateUI() {
+            document.getElementById('money').innerText = state.money;
+            document.getElementById('lemons').innerText = state.lemons;
+            document.getElementById('sugar').innerText = state.sugar;
+            document.getElementById('lvl').innerText = state.lvl;
+        }
+
+        function buy(item) {
+            if (item === 'lemon' && state.money >= 10) {
+                state.money -= 10; state.lemons += 1;
+            } else if (item === 'sugar' && state.money >= 5) {
+                state.money -= 5; state.sugar += 100;
+            } else {
+                tg.showAlert("Недостаточно денег!");
+                return;
+            }
+            save();
+        }
+
+        function make() {
+            if (state.lemons >= 1 && state.sugar >= 100) {
+                state.lemons -= 1;
+                state.sugar -= 100;
+                state.total_made += 1;
+
+                // Шанс порчи 15% (кроме первого раза)
+                let price = 30 + (state.lvl * 5);
+                if (state.total_made > 1 && Math.random() < 0.15) {
+                    let earned = Math.floor(price * 0.3);
+                    state.money += earned;
+                    tg.showPopup({title: "Ой!", message: `Лимонад испортился... Продан за ${earned}₽`, buttons: [{type: 'ok'}]});
+                } else {
+                    state.money += price;
+                    // Повышение уровня каждые 5 удачных лимонадв
+                    state.lvl = Math.floor(state.total_made / 5) + 1;
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+                save();
+            } else {
+                tg.showAlert("Нужны ингредиенты: 1 лимон и 100г сахара!");
+            }
+        }
+
+        updateUI();
     </script>
 </body>
 </html>
