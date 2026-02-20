@@ -8,7 +8,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, WebAppIn
 
 TOKEN = "8516795655:AAHfSA9wS3pf4GcOAFxD052HCBMZKrtdIBE"
 # ЗАМЕНИ ЭТУ ССЫЛКУ на свою ссылку от GitHub Pages
-WEB_APP_URL = "https://xn----ctbeucnqcd8a.github.io"
+WEB_APP_URL = "https://neshcola.github.io/-/"
 DATA_FILE = "users.json"
 
 dp = Dispatcher()
